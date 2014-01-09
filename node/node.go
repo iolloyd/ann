@@ -33,7 +33,7 @@ func (self *Node) CalculateError(target float64) {
     self.Err += err
 }
 
-func (self *Node) UpdateWeights(target, err float64) {
+func (self *Node) UpdateWeights(target float64) {
     for x := 0; x < len(self.InputWeights); x++ {
         self.InputWeights[x] -= 0.1
     }

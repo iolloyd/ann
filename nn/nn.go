@@ -1,7 +1,6 @@
 package nn
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"../node"
@@ -98,41 +97,35 @@ func (self *NN) setInputs(values []float64) {
 }
 
 func (self *NN) FeedBackward(targets []float64) {
-    self.calculateErrors(targets)
-    self.updateWeights()
+    errors := self.calculateErrors(targets)
+    self.updateWeights(errors)
 }
 
-func (self *NN) calculateErrors(targets []float64) {
+func (self *NN) calculateErrors(targets []float64) []float64 {
+
+    outputErrors := []float64{}
     for x := 0; x < len(self.Outputs); x++ {
         cur := self.Outputs[x]
         cur.Err = sigmoid(cur.GetValue() - targets[x])
+        outputErrors = append(outputErrors, cur.Err)
         for child := 0; child < len(cur.InputNodes); child++ {
             cur.InputNodes[child].CalculateError(cur.Err)
         }
     }
-        
+    return outputErrors        
 }
 
-func (self *NN) updateWeights() {
+func (self *NN) updateWeights(targets []float64) {
     for x := 0; x < len(self.Outputs); x++ {
-        self.Outputs[x].UpdateWeights()
+        self.Outputs[x].UpdateWeights(targets[x])
     }
 }
 
 func (self *NN) Show() {
 
+	for x := range self.Inputs{ self.Inputs[x].Show() }
 
-	for x := range self.Inputs{
-    	n := self.Inputs[x]
-    	n.Show()
-    }
-
-	fmt.Println("OUTPUTS")
-
-	for x := 0; x < len(self.Outputs); x++ {
-		n := self.Outputs[x]
-    	n.Show()
-    }
+	for x := range self.Outputs { self.Outputs[x].Show() }
 
 }
 

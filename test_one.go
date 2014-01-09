@@ -8,7 +8,7 @@ var (
 	inSize     = 4
 	hiddenSize = 4
 	outSize    = 2
-	iterations = 100
+	iterations = 400 
 	errorThreshold = 0.1
 )
 

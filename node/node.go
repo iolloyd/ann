@@ -16,20 +16,16 @@ func MakeNode(index int) *Node {
 	return n
 }
 
-func (self *Node) AddNode(node *Node) {
-	node.OutputNodes = append(node.OutputNodes, self)
-}
-
 func (self *Node) GetValue() float64 {
     value := 0.0
     tot := len(self.InputNodes)
     for x := 0; x < tot; x++ {
-        value += self.InputNodes[x].GetValue()
+        value += self.InputNodes[x].GetValue() * self.InputWeights[x]
     }
     return self.Value + value
 }
 
-func (self *Node) UpdateError() {
+func (self *Node) CalculateError(target float64) {
     err := 0.0
     for x := 0; x < len(self.OutputNodes); x++ {
         err += self.OutputNodes[x].Err
@@ -37,12 +33,10 @@ func (self *Node) UpdateError() {
     self.Err += err
 }
 
-func (self *Node) GetTotalInput() float64 {
-	total := 0.0
-	for x := 0; x < len(self.InputNodes); x++ {
-		total += self.InputNodes[x].Value * self.InputWeights[x]
+func (self *Node) UpdateWeights(target, err float64) {
+    for x := 0; x < len(self.InputWeights); x++ {
+        self.InputWeights[x] -= 0.1
     }
-    return total
 }
 
 func (self *Node) Show() {

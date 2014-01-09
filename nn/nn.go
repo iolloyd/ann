@@ -3,6 +3,7 @@ package nn
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"../node"
 )
 
@@ -62,10 +63,32 @@ func MakeNN(inAmount, hidAmount, outAmount int, errorThreshold float64) NN {
 }
 
 func (self *NN) Train(td TrainingData, iterations int) {
-	for x := 0; x < len(td.Inputs); x++ {
-        self.setInputs(td.Inputs[x])
-        self.FeedForward()
+	self.randomizeWeights()
+	for n := 0; n < iterations; n++ {
+        for x := 0; x < len(td.Inputs); x++ {
+            self.setInputs(td.Inputs[x])
+            self.FeedBackward(td.Outputs[0])
+        }
     }
+}
+
+func (self *NN) randomizeWeights() {
+    self.randomizeLayer(self.Inputs)
+    self.randomizeLayer(self.Hidden)
+    self.randomizeLayer(self.Outputs)
+}
+
+func (self *NN) randomizeLayer(layer []node.Node) {
+    for x := 0; x < len(layer); x++ {
+        weights := []float64{}
+        for y := 0; y < len(layer[x].InputNodes); y++ {
+            randomWeight := rand.Float64() * 10
+            weights = append(weights, randomWeight) 
+        }
+        layer[x].InputWeights = weights
+    }
+
+
 }
 
 func (self *NN) setInputs(values []float64) {
@@ -74,18 +97,30 @@ func (self *NN) setInputs(values []float64) {
     }
 }
 
-func (self *NN) FeedForward() {
-	for j := 0; j < len(self.Outputs); j++ {
-    	self.Outputs[j].GetValue()
-    }
+func (self *NN) FeedBackward(targets []float64) {
+    self.calculateErrors(targets)
+    self.updateWeights()
 }
 
-func (self *NN) FeedBackward() {
+func (self *NN) calculateErrors(targets []float64) {
+    for x := 0; x < len(self.Outputs); x++ {
+        cur := self.Outputs[x]
+        cur.Err = sigmoid(cur.GetValue() - targets[x])
+        for child := 0; child < len(cur.InputNodes); child++ {
+            cur.InputNodes[child].CalculateError(cur.Err)
+        }
+    }
+        
+}
+
+func (self *NN) updateWeights() {
+    for x := 0; x < len(self.Outputs); x++ {
+        self.Outputs[x].UpdateWeights()
+    }
 }
 
 func (self *NN) Show() {
 
-	fmt.Println("INPUTS")
 
 	for x := range self.Inputs{
     	n := self.Inputs[x]

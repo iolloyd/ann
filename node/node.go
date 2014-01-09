@@ -5,18 +5,28 @@ import (
 )
 
 type Node struct {
+	Index int
 	InputNodes, OutputNodes  []*Node
 	Value, Err, Target  float64
 	InputWeights    []float64
 }
 
-func MakeNode() *Node {
-	n := &Node{[]*Node{}, []*Node{}, 0, 0, 0, []float64{}}
+func MakeNode(index int) *Node {
+	n := &Node{index, []*Node{}, []*Node{}, 0, 0, 0, []float64{}}
 	return n
 }
 
 func (self *Node) AddNode(node *Node) {
 	node.OutputNodes = append(node.OutputNodes, self)
+}
+
+func (self *Node) GetValue() float64 {
+    value := 0.0
+    tot := len(self.InputNodes)
+    for x := 0; x < tot; x++ {
+        value += self.InputNodes[x].GetValue()
+    }
+    return self.Value + value
 }
 
 func (self *Node) UpdateError() {
@@ -36,14 +46,6 @@ func (self *Node) GetTotalInput() float64 {
 }
 
 func (self *Node) Show() {
-	fmt.Printf("Input Node %f\n", self.Value)
-	fmt.Printf("With Error %f\n", self.Err)
+	fmt.Printf("Index: %d, Value: %f\n", self.Index, self.GetValue())
 }
 
-func (self *Node) GetFeedForwardValue() float64 {
-	sum := 0.0
-	for x := 0; x < len(self.InputNodes); x++ {
-		sum += self.InputNodes[x].GetFeedForwardValue()
-    }
-    return self.Value + sum
-}

@@ -3,7 +3,6 @@ package nn
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"../node"
 )
 
@@ -19,39 +18,32 @@ type Layer []node.Node
 func makeLayer(amount int) Layer {
 	nodes := []node.Node{}
 	for x := 0; x < amount; x++ {
-		nodes = append(nodes, *node.MakeNode())
+		nodes = append(nodes, *node.MakeNode(x))
 	}
 	return nodes
 }
 
 func makeInLayer(amount int) Layer {
 	layer := makeLayer(amount)
-	for i, _ := range layer {
-		layer[i].InputNodes = []*node.Node{}
-		layer[i].Value = 0
+	for x := 0; x < len(layer); x++ {
+		layer[x].InputNodes = []*node.Node{}
+		layer[x].Value = 0
 	}
 	return layer
 }
 
-func makeHiddenLayer(inputLayer Layer, amount int) Layer {
+func makeJoinedLayer(inputLayer Layer, amount int) Layer {
 	layer := makeLayer(amount)
-	for n := range layer {
-		for m := range inputLayer {
-			layer[n].AddNode(&inputLayer[m])
+	for x := 0; x < len(layer); x++ {
+		nodes := []*node.Node{}
+		for n := 0; n < len(inputLayer); n++ {
+			nodes = append(nodes, &inputLayer[n])
 		}
+        layer[x].InputNodes = nodes
 	}
 	return layer
 }
 
-func makeOutLayer(hiddenLayer Layer, amount int) Layer {
-	layer := makeLayer(amount)
-	for n := range layer {
-		for m := range hiddenLayer {
-			layer[n].AddNode(&hiddenLayer[m])
-		}
-	}
-	return layer
-}
 
 func sigmoid(x float64) float64 {
 	return 1.0 / (1.0 + math.Pow(math.E, -float64(x))) 
@@ -63,8 +55,8 @@ func dsigmoid(y float64) float64 {
 
 func MakeNN(inAmount, hidAmount, outAmount int, errorThreshold float64) NN {
 	inLayer := makeInLayer(inAmount)
-	hiddenLayer := makeHiddenLayer(inLayer, hidAmount)
-	outLayer := makeOutLayer(hiddenLayer, outAmount)
+	hiddenLayer := makeJoinedLayer(inLayer, hidAmount)
+	outLayer := makeJoinedLayer(hiddenLayer, outAmount)
 	nn := NN{inLayer, hiddenLayer, outLayer, errorThreshold}
 	return nn
 }
@@ -72,8 +64,7 @@ func MakeNN(inAmount, hidAmount, outAmount int, errorThreshold float64) NN {
 func (self *NN) Train(td TrainingData, iterations int) {
 	for x := 0; x < len(td.Inputs); x++ {
         self.setInputs(td.Inputs[x])
-        self.setOutputs(td.Outputs[x])
-        self.startIterations(iterations)
+        self.FeedForward()
     }
 }
 
@@ -83,54 +74,29 @@ func (self *NN) setInputs(values []float64) {
     }
 }
 
-func (self *NN) setOutputs(values []float64) {
-	for i, value := range values {
-    	self.Outputs[i].Err = value
-    	self.Outputs[i].Value = rand.Float64() * 2 
-    }
-}
-
-func (self *NN) startIterations(iterations int) {
-	for x := 0; x < iterations; x++ {
-    	self.FeedForward()
-    	self.FeedBackward()
-    }
-    
-}
-
-// Adjust the values by recursively summing the
-// weighted values of the incoming connections to the 
-// out nodes and their subsequent connections
 func (self *NN) FeedForward() {
 	for j := 0; j < len(self.Outputs); j++ {
-    	currentNode := self.Outputs[j]
-    	sum := 0.0
-    	for k := 0; k < len(currentNode.InputNodes); k++ {
-        	sum += currentNode.InputNodes[k].GetFeedForwardValue()
-        }
-        currentNode.Value = sum
+    	self.Outputs[j].GetValue()
     }
 }
 
-// Adjust the weights
-//
-// We need to reset the error and update 
-// weights on outputs
 func (self *NN) FeedBackward() {
 }
 
 func (self *NN) Show() {
+
+	fmt.Println("INPUTS")
+
 	for x := range self.Inputs{
     	n := self.Inputs[x]
-    	fmt.Println("Input")
     	n.Show()
-    	fmt.Println("-----")
     }
+
+	fmt.Println("OUTPUTS")
+
 	for x := 0; x < len(self.Outputs); x++ {
 		n := self.Outputs[x]
-    	fmt.Println("Output")
     	n.Show()
-    	fmt.Println("-----")
     }
 
 }

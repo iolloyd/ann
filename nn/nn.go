@@ -34,12 +34,21 @@ func makeInLayer(amount int) Layer {
 
 func makeJoinedLayer(inputLayer Layer, amount int) Layer {
 	layer := makeLayer(amount)
+
+	// Add each member of the input layer as an input node 
+	// to each member of the created layer
 	for x := 0; x < len(layer); x++ {
-		nodes := []*node.Node{}
 		for n := 0; n < len(inputLayer); n++ {
-			nodes = append(nodes, &inputLayer[n])
+			layer[x].InputNodes = append(layer[x].InputNodes, &inputLayer[n])
 		}
-        layer[x].InputNodes = nodes
+	}
+
+	// Add each member of the created layer as an output node 
+	// to each member of the input layer
+	for x := 0; x < len(inputLayer); x++ {
+		for n := 0; n < len(layer); n++ {
+			inputLayer[x].OutputNodes = append(inputLayer[x].OutputNodes, &layer[n])
+		}
 	}
 	return layer
 }
@@ -61,12 +70,12 @@ func MakeNN(inAmount, hidAmount, outAmount int, errorThreshold float64) NN {
 	return nn
 }
 
-func (self *NN) Train(td TrainingData, iterations int) {
+func (self *NN) Train(td TrainingData, iterations int, rate float64) {
 	self.randomizeWeights()
 	for n := 0; n < iterations; n++ {
         for x := 0; x < len(td.Inputs); x++ {
             self.setInputs(td.Inputs[x])
-            self.FeedBackward(td.Outputs[0])
+            self.FeedBackward(td.Outputs[0], rate)
         }
     }
 }
@@ -96,37 +105,19 @@ func (self *NN) setInputs(values []float64) {
     }
 }
 
-func (self *NN) FeedBackward(targets []float64) {
-    errors := self.calculateErrors(targets)
-    self.updateWeights(errors)
+func (self *NN) FeedBackward(targets []float64, rate float64) {
+    self.updateWeights(targets, rate)
 }
 
-func (self *NN) calculateErrors(targets []float64) []float64 {
-
-    outputErrors := []float64{}
+func (self *NN) updateWeights(targets []float64, rate float64) {
     for x := 0; x < len(self.Outputs); x++ {
-        cur := self.Outputs[x]
-        cur.Err = sigmoid(cur.GetValue() - targets[x])
-        outputErrors = append(outputErrors, cur.Err)
-        for child := 0; child < len(cur.InputNodes); child++ {
-            cur.InputNodes[child].CalculateError(cur.Err)
-        }
-    }
-    return outputErrors        
-}
-
-func (self *NN) updateWeights(targets []float64) {
-    for x := 0; x < len(self.Outputs); x++ {
-        self.Outputs[x].UpdateWeights(targets[x])
+        self.Outputs[x].UpdateWeights(targets[x], rate)
     }
 }
 
 func (self *NN) Show() {
-
-	for x := range self.Inputs{ self.Inputs[x].Show() }
-
-	for x := range self.Outputs { self.Outputs[x].Show() }
-
+	for x := range self.Inputs{self.Inputs[x].Show()}
+	for x := range self.Outputs {self.Outputs[x].Show()}
 }
 
 
